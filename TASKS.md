@@ -22,21 +22,21 @@
 
 | ID   | エージェント | タスク                                              | ステータス | 備考 |
 | ---- | ------------ | --------------------------------------------------- | ---------- | ---- |
-| T001 | GON          | Vite + React + TS + Tailwind プロジェクト初期化     | ⬜ pending |      |
-| T002 | GON          | ディレクトリ構造・型定義 (src/types/index.ts) 作成  | ⬜ pending | T001依存 |
-| T003 | KOMUGI       | デザイントークン定義・tailwind.config.ts 設定       | ⬜ pending | T001依存 |
+| T001 | GON          | Vite + React + TS + Tailwind プロジェクト初期化     | ✅ done |      |
+| T002 | GON          | ディレクトリ構造・型定義 (src/types/index.ts) 作成  | ✅ done | T001依存 |
+| T003 | KOMUGI       | デザイントークン定義・tailwind.config.ts 設定       | ✅ done | T001依存 |
 
 ### Phase 2 — コア実装 (KILLUA + KURAPIKA 並列)
 
 | ID   | エージェント | タスク                                                        | ステータス | 備考 |
 | ---- | ------------ | ------------------------------------------------------------- | ---------- | ---- |
-| T004 | KURAPIKA     | src/lib/geminiClient.ts — Gemini API クライアント実装         | ⬜ pending | T002依存 |
-| T005 | KURAPIKA     | FREE/PAID モード切替ロジック実装 (ApiMode enum + 切替関数)    | ⬜ pending | T004依存 |
-| T006 | KILLUA       | src/stores/paintDemoStore.ts — Zustand store 実装             | ⬜ pending | T002依存 |
-| T007 | KILLUA       | src/components/ModeToggle.tsx — FREE/PAID トグル UI           | ⬜ pending | T006依存 |
-| T008 | KILLUA       | src/components/UploadPanel.tsx — 画像ドロップゾーン           | ⬜ pending | T006依存 |
-| T009 | KILLUA       | src/components/PromptPanel.tsx — 塗装指示入力フォーム         | ⬜ pending | T006依存 |
-| T010 | KILLUA       | src/components/ResultPanel.tsx — 生成画像プレビュー           | ⬜ pending | T006依存 |
+| T004 | KURAPIKA     | src/lib/geminiClient.ts — Gemini API クライアント実装         | ✅ done | T002依存 |
+| T005 | KURAPIKA     | FREE/PAID モード切替ロジック実装 (ApiMode enum + 切替関数)    | ✅ done | T004依存 |
+| T006 | KILLUA       | src/stores/paintDemoStore.ts — Zustand store 実装             | ✅ done | T002依存 |
+| T007 | KILLUA       | src/components/ModeToggle.tsx — FREE/PAID トグル UI           | ✅ done | T006依存 |
+| T008 | KILLUA       | src/components/UploadPanel.tsx — 画像ドロップゾーン           | ✅ done | T006依存 |
+| T009 | KILLUA       | src/components/PromptPanel.tsx — 塗装指示入力フォーム         | ✅ done | T006依存 |
+| T010 | KILLUA       | src/components/ResultPanel.tsx — 生成画像プレビュー           | ✅ done | T006依存 |
 
 ### Phase 3 — 統合 & レビュー
 
