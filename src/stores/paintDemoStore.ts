@@ -18,8 +18,9 @@ export const usePaintDemoStore = create<PaintDemoState>((set, get) => ({
   setApiMode: (mode) => set({ apiMode: mode }),
 
   setUploadedFile: (file) => {
-    const prevUrl = get().uploadedImageUrl
-    if (prevUrl) URL.revokeObjectURL(prevUrl)
+    const { uploadedImageUrl, generationResult } = get()
+    if (uploadedImageUrl) URL.revokeObjectURL(uploadedImageUrl)
+    if (generationResult?.outputImageUrl) URL.revokeObjectURL(generationResult.outputImageUrl)
 
     if (!file) {
       set({ uploadedFile: null, uploadedImageUrl: null, generationResult: null, error: null })
@@ -44,6 +45,9 @@ export const usePaintDemoStore = create<PaintDemoState>((set, get) => ({
       set({ error: 'Please enter a paint instruction.' })
       return
     }
+
+    const prevResult = get().generationResult
+    if (prevResult?.outputImageUrl) URL.revokeObjectURL(prevResult.outputImageUrl)
 
     set({ isGenerating: true, error: null, generationResult: null })
 

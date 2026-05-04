@@ -6,6 +6,20 @@ const GEMINI_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta'
 // FREE mode: Google AI Studio limit is 2 req/min
 const FREE_RATE_LIMIT_RPM = 2
 
+const SYSTEM_PROMPT = `You are a professional Gunpla (Gundam plastic model) painting assistant.
+The user will provide a photo of a Gunpla kit and a painting instruction in Japanese or English.
+
+Your task:
+- Edit the provided image to reflect the requested paint scheme
+- Maintain the original kit's shape, proportions, and details
+- Apply realistic model painting effects (metallic, pearl, candy coat, etc.) as instructed
+- Output a single edited image
+
+Important:
+- This is an inspiration image for modeling reference, not a photorealistic render
+- Do not add backgrounds or change composition
+- Do not add text or watermarks to the image`
+
 // ──────────────────────────────────────────────
 //  Result types
 // ──────────────────────────────────────────────
@@ -97,25 +111,11 @@ export async function generatePaintImage(
 
   // 3-part structure: system prompt → image → user instruction
   // Prompt injection guard: user text is always the last part, isolated from system context
-  const systemPrompt = `You are a professional Gunpla (Gundam plastic model) painting assistant.
-The user will provide a photo of a Gunpla kit and a painting instruction in Japanese or English.
-
-Your task:
-- Edit the provided image to reflect the requested paint scheme
-- Maintain the original kit's shape, proportions, and details
-- Apply realistic model painting effects (metallic, pearl, candy coat, etc.) as instructed
-- Output a single edited image
-
-Important:
-- This is an inspiration image for modeling reference, not a photorealistic render
-- Do not add backgrounds or change composition
-- Do not add text or watermarks to the image`
-
   const body = {
     contents: [
       {
         parts: [
-          { text: systemPrompt },
+          { text: SYSTEM_PROMPT },
           { inline_data: { mime_type: mimeType, data: base64 } },
           { text: prompt },
         ],
