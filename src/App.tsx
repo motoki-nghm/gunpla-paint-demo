@@ -9,7 +9,6 @@ export default function App() {
       <ModeToggle />
 
       <div className="mx-auto max-w-4xl px-4 py-12 space-y-8">
-        {/* Header */}
         <header className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight text-zinc-100">
             Gunpla Paint Demo
@@ -19,15 +18,11 @@ export default function App() {
           </p>
         </header>
 
-        {/* Main layout */}
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          {/* Left column: input */}
           <div className="space-y-6">
             <UploadPanel />
             <PromptPanel />
           </div>
-
-          {/* Right column: result */}
           <div>
             <ResultPanel />
           </div>
