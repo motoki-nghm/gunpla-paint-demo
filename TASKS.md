@@ -22,9 +22,9 @@
 
 | ID   | エージェント | タスク                                              | ステータス | 備考 |
 | ---- | ------------ | --------------------------------------------------- | ---------- | ---- |
-| T001 | GON          | Vite + React + TS + Tailwind プロジェクト初期化     | ⬜ pending |      |
-| T002 | GON          | ディレクトリ構造・型定義 (src/types/index.ts) 作成  | ⬜ pending | T001依存 |
-| T003 | KOMUGI       | デザイントークン定義・tailwind.config.ts 設定       | ⬜ pending | T001依存 |
+| T001 | GON          | Vite + React + TS + Tailwind プロジェクト初期化     | ✅ done |      |
+| T002 | GON          | ディレクトリ構造・型定義 (src/types/index.ts) 作成  | ✅ done | T001依存 |
+| T003 | KOMUGI       | デザイントークン定義・tailwind.config.ts 設定       | ✅ done | T001依存 |
 
 ### Phase 2 — コア実装 (KILLUA + KURAPIKA 並列)
 
