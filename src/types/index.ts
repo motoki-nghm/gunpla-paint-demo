@@ -1,44 +1,50 @@
 // ──────────────────────────────────────────────
-//  API Mode
+//  Color Analysis Types
 // ──────────────────────────────────────────────
 
-export enum ApiMode {
-  FREE = 'FREE',   // 標準モード
-  PAID = 'PAID',   // 高精度モード
+export interface ColorInfo {
+  name: string  // 色名（日本語）
+  hex: string   // #RRGGBB
+}
+
+export type RecommendationType = 'change' | 'add' | 'accent'
+
+export interface PaintRecommendation {
+  type: RecommendationType
+  description: string   // 提案の説明
+  from?: ColorInfo      // 元の色（change のみ）
+  to: ColorInfo         // 変更後 or 追加する色
+  recipe: string        // 調色レシピ（製品名・比率）
+  effect: string        // 仕上がりイメージ
+}
+
+export interface BlockAnalysis {
+  blockName: string
+  currentColors: ColorInfo[]
+  recommendations: PaintRecommendation[]
+}
+
+export interface GunplaAnalysis {
+  kitName: string       // 推定機体名
+  overallStyle: string  // 現在のカラースキーム説明
+  blocks: BlockAnalysis[]
 }
 
 // ──────────────────────────────────────────────
-//  Generation Result
-// ──────────────────────────────────────────────
-
-export interface GenerationResult {
-  id: string
-  inputImageUrl: string
-  outputImageUrl: string
-  prompt: string
-  mode: ApiMode
-  createdAt: Date
-}
-
-// ──────────────────────────────────────────────
-//  Zustand Store State
+//  Store State
 // ──────────────────────────────────────────────
 
 export interface PaintDemoState {
-  // ── state ──────────────────────────────────
-  apiMode: ApiMode
   uploadedFile: File | null
   uploadedImageUrl: string | null
-  prompt: string
-  isGenerating: boolean
-  generationResult: GenerationResult | null
+  userNote: string
+  isAnalyzing: boolean
+  analysis: GunplaAnalysis | null
   error: string | null
 
-  // ── actions ────────────────────────────────
-  setApiMode: (mode: ApiMode) => void
   setUploadedFile: (file: File | null) => void
-  setPrompt: (prompt: string) => void
+  setUserNote: (note: string) => void
   setError: (error: string | null) => void
-  generate: () => Promise<void>
+  analyze: () => Promise<void>
   reset: () => void
 }

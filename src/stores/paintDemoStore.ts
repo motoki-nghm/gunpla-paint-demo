@@ -1,93 +1,63 @@
 import { create } from 'zustand'
-import { ApiMode, GenerationResult, PaintDemoState } from '@/types'
-import { generatePaintImage } from '@/lib/leonardoClient'
-
-const defaultMode = (import.meta.env.VITE_DEFAULT_API_MODE as ApiMode) ?? ApiMode.FREE
+import { GunplaAnalysis, PaintDemoState } from '@/types'
+import { analyzeGunpla } from '@/lib/geminiAnalyzer'
 
 export const usePaintDemoStore = create<PaintDemoState>((set, get) => ({
-  // ── initial state ───────────────────────────
-  apiMode: defaultMode,
   uploadedFile: null,
   uploadedImageUrl: null,
-  prompt: '',
-  isGenerating: false,
-  generationResult: null,
+  userNote: '',
+  isAnalyzing: false,
+  analysis: null,
   error: null,
 
-  // ── actions ─────────────────────────────────
-  setApiMode: (mode) => set({ apiMode: mode }),
-
   setUploadedFile: (file) => {
-    const { uploadedImageUrl, generationResult } = get()
+    const { uploadedImageUrl } = get()
     if (uploadedImageUrl) URL.revokeObjectURL(uploadedImageUrl)
-    if (generationResult?.outputImageUrl?.startsWith('blob:')) {
-      URL.revokeObjectURL(generationResult.outputImageUrl)
-    }
 
     if (!file) {
-      set({ uploadedFile: null, uploadedImageUrl: null, generationResult: null, error: null })
+      set({ uploadedFile: null, uploadedImageUrl: null, analysis: null, error: null })
       return
     }
     const url = URL.createObjectURL(file)
-    set({ uploadedFile: file, uploadedImageUrl: url, generationResult: null, error: null })
+    set({ uploadedFile: file, uploadedImageUrl: url, analysis: null, error: null })
   },
 
-  setPrompt: (prompt) => set({ prompt }),
+  setUserNote: (userNote) => set({ userNote }),
 
   setError: (error) => set({ error }),
 
-  generate: async () => {
-    const { uploadedFile, prompt, apiMode } = get()
-
+  analyze: async () => {
+    const { uploadedFile, userNote } = get()
     if (!uploadedFile) {
       set({ error: '画像をアップロードしてください。' })
       return
     }
-    if (!prompt.trim()) {
-      set({ error: '塗装指示を入力してください。' })
-      return
-    }
 
-    const prevResult = get().generationResult
-    if (prevResult?.outputImageUrl?.startsWith('blob:')) {
-      URL.revokeObjectURL(prevResult.outputImageUrl)
-    }
+    set({ isAnalyzing: true, error: null, analysis: null })
 
-    set({ isGenerating: true, error: null, generationResult: null })
-
-    const result = await generatePaintImage(uploadedFile, prompt.trim(), apiMode)
+    const result = await analyzeGunpla(uploadedFile, userNote)
 
     if (result.error) {
-      set({ isGenerating: false, error: result.message })
+      set({ isAnalyzing: false, error: result.message })
       return
     }
 
-    const generationResult: GenerationResult = {
-      id: crypto.randomUUID(),
-      inputImageUrl: get().uploadedImageUrl!,
-      outputImageUrl: result.outputImageUrl,
-      prompt: prompt.trim(),
-      mode: apiMode,
-      createdAt: new Date(),
-    }
-
-    set({ isGenerating: false, generationResult })
+    set({ isAnalyzing: false, analysis: result.analysis })
   },
 
   reset: () => {
-    const { uploadedImageUrl, generationResult } = get()
+    const { uploadedImageUrl } = get()
     if (uploadedImageUrl) URL.revokeObjectURL(uploadedImageUrl)
-    if (generationResult?.outputImageUrl?.startsWith('blob:')) {
-      URL.revokeObjectURL(generationResult.outputImageUrl)
-    }
-
     set({
       uploadedFile: null,
       uploadedImageUrl: null,
-      prompt: '',
-      isGenerating: false,
-      generationResult: null,
+      userNote: '',
+      isAnalyzing: false,
+      analysis: null,
       error: null,
     })
   },
 }))
+
+// 型エクスポート (他コンポーネントから利用)
+export type { GunplaAnalysis }
