@@ -1,6 +1,6 @@
 import { ApiMode } from '@/types'
 
-const GEMINI_MODEL = 'gemini-2.5-flash-image'
+const GEMINI_MODEL = 'gemini-2.0-flash-exp'
 const GEMINI_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta'
 
 // FREE mode: Google AI Studio limit is 2 req/min
