@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Z-Image Turbo — ガンプラ塩装</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #08080f;
+    --card: #0e0e18;
+    --border: rgba(139,92,246,0.25);
+    --violet: #7c3aed;
+    --violet-l: #a78bfa;
+    --pink: #f472b6;
+    --text: #ffffff;
+    --text-dim: rgba(255,255,255,0.5);
+    --text-faint: rgba(255,255,255,0.3);
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    min-height: 100dvh;
+    padding: 16px;
+  }
+  h1 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #fff 30%, var(--violet-l) 65%, var(--pink) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 4px;
+  }
+  .subtitle { font-size: 0.75rem; color: var(--text-faint); margin-bottom: 20px; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  label { font-size: 0.75rem; color: var(--text-dim); display: block; margin-bottom: 6px; }
+  input[type="text"], input[type="password"], textarea, select {
+    width: 100%;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 0.875rem;
+    padding: 10px 12px;
+    outline: none;
+    -webkit-appearance: none;
+  }
+  input:focus, textarea:focus { border-color: var(--violet); }
+  textarea { resize: vertical; min-height: 80px; }
+  .drop-zone {
+    border: 2px dashed rgba(139,92,246,0.4);
+    border-radius: 14px;
+    padding: 24px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    background: rgba(139,92,246,0.04);
+  }
+  .drop-zone.drag-over { border-color: var(--violet-l); background: rgba(139,92,246,0.1); }
+  .drop-zone input { display: none; }
+  .drop-zone .icon { font-size: 2rem; margin-bottom: 8px; }
+  .drop-zone p { font-size: 0.8rem; color: var(--text-dim); }
+  .drop-zone small { font-size: 0.7rem; color: var(--text-faint); }
+  #preview-wrap { position: relative; margin-top: 12px; display: none; }
+  #preview-wrap img { width: 100%; border-radius: 10px; max-height: 300px; object-fit: contain; }
+  #clear-btn {
+    position: absolute; top: 8px; right: 8px;
+    background: rgba(0,0,0,0.6); border: none; color: white;
+    border-radius: 50%; width: 28px; height: 28px; font-size: 1rem;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .slider-row { display: flex; align-items: center; gap: 10px; }
+  input[type="range"] {
+    flex: 1; -webkit-appearance: none; height: 4px;
+    background: rgba(139,92,246,0.3); border-radius: 2px; outline: none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 18px; height: 18px;
+    background: var(--violet-l); border-radius: 50%; cursor: pointer;
+  }
+  .range-val { font-size: 0.8rem; color: var(--violet-l); min-width: 32px; text-align: right; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .chip {
+    font-size: 0.7rem; padding: 4px 10px;
+    background: rgba(139,92,246,0.12); border: 1px solid rgba(139,92,246,0.3);
+    border-radius: 99px; color: var(--violet-l); cursor: pointer;
+    transition: background 0.15s;
+  }
+  .chip:active { background: rgba(139,92,246,0.3); }
+  button.primary {
+    width: 100%; padding: 14px;
+    background: linear-gradient(135deg, #7c3aed, #9333ea, #db2777);
+    border: none; border-radius: 12px; color: white;
+    font-size: 1rem; font-weight: 600; cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  button.primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  button.primary:active:not(:disabled) { opacity: 0.85; }
+  #result-section { display: none; }
+  #result-img { width: 100%; border-radius: 12px; display: block; }
+  .dl-btn {
+    display: block; width: 100%; margin-top: 10px; padding: 12px;
+    background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.3);
+    border-radius: 10px; color: var(--violet-l); font-size: 0.875rem;
+    text-align: center; cursor: pointer; text-decoration: none;
+  }
+  .status {
+    margin-top: 10px; font-size: 0.8rem; color: var(--text-dim);
+    min-height: 1.2em; text-align: center;
+  }
+  .status.error { color: #f87171; }
+  .status.ok { color: #4ade80; }
+  .spinner {
+    display: inline-block; width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,0.2);
+    border-top-color: white; border-radius: 50%;
+    animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .section-title { font-size: 0.8rem; font-weight: 600; color: var(--text-dim); margin-bottom: 10px; }
+  .key-toggle { font-size: 0.7rem; color: var(--violet-l); cursor: pointer; margin-left: 8px; }
+</style>
+</head>
+<body>
+
+<h1>🎨 Z-Image Turbo</h1>
+<p class="subtitle">ガンプラ塩装 — powered by fal.ai</p>
+
+<!-- API キー -->
+<div class="card">
+  <label>
+    fal.ai API キー
+    <span class="key-toggle" id="key-toggle">表示</span>
+  </label>
+  <input type="password" id="fal-key" placeholder="key-xxxxxxxxxxxxxxxx"
+         autocomplete="off" autocorrect="off" spellcheck="false">
+  <div style="font-size:0.68rem;color:var(--text-faint);margin-top:6px;">
+    キーはこのデバイスのみに保存されます（localStorage）
+  </div>
+</div>
+
+<!-- 画像アップロード -->
+<div class="card">
+  <p class="section-title">ガンプラ画像</p>
+  <div class="drop-zone" id="drop-zone">
+    <input type="file" id="file-input" accept="image/*" capture="environment">
+    <div class="icon">📸</div>
+    <p>タップして写真を選ぶ</p>
+    <small>カメラ撑影も可 · JPG / PNG / WEBP</small>
+  </div>
+  <div id="preview-wrap">
+    <img id="preview-img" alt="preview">
+    <button id="clear-btn" aria-label="画像を削除">✕</button>
+  </div>
+</div>
+
+<!-- プロンプト -->
+<div class="card">
+  <label>変更プロンプト（英語推奨）</label>
+  <textarea id="prompt" placeholder="Repaint the Gunpla in a weathered dark metallic style with panel line details..."></textarea>
+  <div class="chips" id="chips"></div>
+</div>
+
+<!-- 強度 -->
+<div class="card">
+  <label>変更強度 (strength)</label>
+  <div class="slider-row">
+    <input type="range" id="strength" min="0.1" max="1.0" step="0.05" value="0.75">
+    <span class="range-val" id="strength-val">0.75</span>
+  </div>
+  <div style="font-size:0.7rem;color:var(--text-faint);margin-top:6px;">
+    低い ← 元画像を維持 ｜ 高い → 大きく変更 → 高い
+  </div>
+</div>
+
+<!-- 実行ボタン -->
+<button class="primary" id="run-btn" disabled>塩装変更を実行</button>
+<div class="status" id="status"></div>
+
+<!-- 結果 -->
+<div id="result-section" class="card" style="margin-top:12px;">
+  <p class="section-title">生成結果</p>
+  <img id="result-img" alt="result">
+  <a id="dl-btn" class="dl-btn" download="gunpla_result.png">⬇ 画像を保存</a>
+</div>
+
+<script type="module">
+import { fal } from 'https://esm.sh/@fal-ai/client@1'
+
+const ENDPOINT = 'fal-ai/z-image-edit'
+const PRESETS = [
+  'Repaint in weathered battle-damaged dark metallic tones',
+  'Apply glossy white and gold color scheme with panel highlights',
+  'Transform to deep midnight blue with silver accents',
+  'Custom red and black scheme with worn metallic finish',
+  'Desert camouflage: tan, brown and olive tones',
+]
+const LS_KEY = 'z-image-fal-key'
+
+const keyInput    = document.getElementById('fal-key')
+const keyToggle   = document.getElementById('key-toggle')
+const dropZone    = document.getElementById('drop-zone')
+const fileInput   = document.getElementById('file-input')
+const previewWrap = document.getElementById('preview-wrap')
+const previewImg  = document.getElementById('preview-img')
+const clearBtn    = document.getElementById('clear-btn')
+const promptEl    = document.getElementById('prompt')
+const chipsEl     = document.getElementById('chips')
+const strengthEl  = document.getElementById('strength')
+const strengthVal = document.getElementById('strength-val')
+const runBtn      = document.getElementById('run-btn')
+const statusEl    = document.getElementById('status')
+const resultSect  = document.getElementById('result-section')
+const resultImg   = document.getElementById('result-img')
+const dlBtn       = document.getElementById('dl-btn')
+
+let selectedFile = null
+
+const savedKey = localStorage.getItem(LS_KEY)
+if (savedKey) keyInput.value = savedKey
+
+keyInput.addEventListener('input', () => {
+  localStorage.setItem(LS_KEY, keyInput.value)
+  updateRunBtn()
+})
+keyToggle.addEventListener('click', () => {
+  const hidden = keyInput.type === 'password'
+  keyInput.type = hidden ? 'text' : 'password'
+  keyToggle.textContent = hidden ? '隠す' : '表示'
+})
+
+PRESETS.forEach(text => {
+  const chip = document.createElement('button')
+  chip.className = 'chip'
+  chip.textContent = text
+  chip.addEventListener('click', () => { promptEl.value = text })
+  chipsEl.appendChild(chip)
+})
+
+strengthEl.addEventListener('input', () => {
+  strengthVal.textContent = (+strengthEl.value).toFixed(2)
+})
+
+dropZone.addEventListener('click', () => fileInput.click())
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over') })
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'))
+dropZone.addEventListener('drop', e => {
+  e.preventDefault()
+  dropZone.classList.remove('drag-over')
+  const file = e.dataTransfer?.files?.[0]
+  if (file) setFile(file)
+})
+fileInput.addEventListener('change', () => {
+  if (fileInput.files?.[0]) setFile(fileInput.files[0])
+})
+clearBtn.addEventListener('click', (e) => {
+  e.stopPropagation()
+  selectedFile = null
+  previewImg.src = ''
+  previewWrap.style.display = 'none'
+  dropZone.style.display = ''
+  fileInput.value = ''
+  updateRunBtn()
+})
+
+function setFile(file) {
+  selectedFile = file
+  const url = URL.createObjectURL(file)
+  previewImg.src = url
+  previewWrap.style.display = 'block'
+  dropZone.style.display = 'none'
+  updateRunBtn()
+}
+
+function updateRunBtn() {
+  runBtn.disabled = !(selectedFile && keyInput.value.trim())
+}
+
+runBtn.addEventListener('click', async () => {
+  const apiKey   = keyInput.value.trim()
+  const prompt   = promptEl.value.trim()
+  const strength = parseFloat(strengthEl.value)
+
+  if (!apiKey)       return setStatus('APIキーを入力してください', 'error')
+  if (!selectedFile) return setStatus('画像を選択してください', 'error')
+  if (!prompt)       return setStatus('プロンプトを入力してください', 'error')
+
+  runBtn.disabled = true
+  setStatus('<span class="spinner"></span>画像をアップロード中…', '')
+  resultSect.style.display = 'none'
+
+  try {
+    fal.config({ credentials: apiKey })
+
+    setStatus('<span class="spinner"></span>画像をアップロード中…', '')
+    const imageUrl = await fal.storage.upload(selectedFile)
+
+    setStatus('<span class="spinner"></span>AI 生成中… (30秒ほどかかります)', '')
+    const result = await fal.subscribe(ENDPOINT, {
+      input: { prompt, image_url: imageUrl, strength },
+      logs: false,
+    })
+
+    const outUrl = result?.data?.images?.[0]?.url ?? result?.images?.[0]?.url
+    if (!outUrl) throw new Error('画像URLが取得できませんでした')
+
+    resultImg.src = outUrl
+    dlBtn.href = outUrl
+    resultSect.style.display = 'block'
+    setStatus('✓ 生成完了', 'ok')
+    resultSect.scrollIntoView({ behavior: 'smooth', block: 'start' })
+
+  } catch (err) {
+    console.error(err)
+    setStatus(`エラー: ${err?.message ?? err}`, 'error')
+  } finally {
+    runBtn.disabled = false
+    updateRunBtn()
+  }
+})
+
+function setStatus(html, cls) {
+  statusEl.innerHTML = html
+  statusEl.className = 'status ' + (cls || '')
+}
+</script>
+</body>
+</html>

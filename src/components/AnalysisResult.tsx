@@ -16,7 +16,7 @@ export default function AnalysisResult() {
   if (!analysis) return null
 
   return (
-    <div className="space-y-8">
+    <div id="analysis-result" className="space-y-8">
       <KitHeader analysis={analysis} onReset={reset} />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {analysis.blocks.map((block) => (

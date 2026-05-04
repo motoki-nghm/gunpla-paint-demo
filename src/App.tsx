@@ -1,6 +1,7 @@
 import UploadPanel from '@/components/UploadPanel'
 import AnalyzePanel from '@/components/AnalyzePanel'
 import AnalysisResult from '@/components/AnalysisResult'
+import ExportPanel from '@/components/ExportPanel'
 import { usePaintDemoStore } from '@/stores/paintDemoStore'
 
 export default function App() {
@@ -56,6 +57,9 @@ export default function App() {
 
         {/* Result */}
         <AnalysisResult />
+
+        {/* Export */}
+        <ExportPanel />
       </div>
     </div>
   )
