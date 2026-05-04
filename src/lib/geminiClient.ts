@@ -1,6 +1,6 @@
 import { ApiMode } from '@/types'
 
-const GEMINI_MODEL = 'gemini-2.5-flash-preview-image-generation'
+const GEMINI_MODEL = 'gemini-2.5-flash-image'
 const GEMINI_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta'
 
 // FREE mode: Google AI Studio limit is 2 req/min
@@ -95,19 +95,32 @@ export async function generatePaintImage(
     return { error: true, code: 'FILE_READ_ERROR', message: 'Failed to read the uploaded image.' }
   }
 
-  // Prompt injection guard: keep user text in a separate part, never in system context
+  // 3-part structure: system prompt → image → user instruction
+  // Prompt injection guard: user text is always the last part, isolated from system context
+  const systemPrompt = `You are a professional Gunpla (Gundam plastic model) painting assistant.
+The user will provide a photo of a Gunpla kit and a painting instruction in Japanese or English.
+
+Your task:
+- Edit the provided image to reflect the requested paint scheme
+- Maintain the original kit's shape, proportions, and details
+- Apply realistic model painting effects (metallic, pearl, candy coat, etc.) as instructed
+- Output a single edited image
+
+Important:
+- This is an inspiration image for modeling reference, not a photorealistic render
+- Do not add backgrounds or change composition
+- Do not add text or watermarks to the image`
+
   const body = {
     contents: [
       {
         parts: [
-          { inlineData: { mimeType, data: base64 } },
+          { text: systemPrompt },
+          { inline_data: { mime_type: mimeType, data: base64 } },
           { text: prompt },
         ],
       },
     ],
-    generationConfig: {
-      responseModalities: ['IMAGE', 'TEXT'],
-    },
   }
 
   let response: Response
@@ -152,8 +165,9 @@ export async function generatePaintImage(
   }
 
   const parts: unknown[] = json?.candidates?.[0]?.content?.parts ?? []
+  // REST API returns snake_case: inline_data.mime_type / inline_data.data
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const imagePart = parts.find((p: any) => p?.inlineData?.data) as any
+  const imagePart = parts.find((p: any) => p?.inline_data?.data ?? p?.inlineData?.data) as any
 
   if (!imagePart) {
     return {
@@ -163,8 +177,9 @@ export async function generatePaintImage(
     }
   }
 
-  const outputMimeType: string = imagePart.inlineData.mimeType ?? 'image/png'
-  const outputImageUrl = base64ToObjectUrl(imagePart.inlineData.data, outputMimeType)
+  const inlineData = imagePart.inline_data ?? imagePart.inlineData
+  const outputMimeType: string = inlineData.mime_type ?? inlineData.mimeType ?? 'image/png'
+  const outputImageUrl = base64ToObjectUrl(inlineData.data, outputMimeType)
 
   return { error: false, outputImageUrl, mimeType: outputMimeType }
 }
