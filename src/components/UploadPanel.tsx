@@ -2,13 +2,19 @@ import { useCallback } from 'react'
 import { useDropzone, FileRejection } from 'react-dropzone'
 import { usePaintDemoStore } from '@/stores/paintDemoStore'
 
+
 const MAX_SIZE = Number(import.meta.env.VITE_MAX_IMAGE_SIZE_BYTES) || 10_485_760
 const ACCEPT = { 'image/jpeg': [], 'image/png': [], 'image/webp': [] }
 
 export default function UploadPanel() {
   const uploadedImageUrl = usePaintDemoStore((s) => s.uploadedImageUrl)
+  const uploadedFile = usePaintDemoStore((s) => s.uploadedFile)
+  const error = usePaintDemoStore((s) => s.error)
   const setUploadedFile = usePaintDemoStore((s) => s.setUploadedFile)
   const setError = usePaintDemoStore((s) => s.setError)
+
+  // Show error near upload area only when no file is loaded (= upload-stage error)
+  const uploadError = !uploadedFile ? error : null
 
   const onDrop = useCallback(
     (accepted: File[], rejected: FileRejection[]) => {
@@ -81,6 +87,12 @@ export default function UploadPanel() {
         >
           Remove image
         </button>
+      )}
+
+      {uploadError && (
+        <p className="text-xs text-red-400" role="alert" aria-live="polite">
+          {uploadError}
+        </p>
       )}
     </div>
   )

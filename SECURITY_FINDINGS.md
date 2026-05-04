@@ -33,18 +33,33 @@
   - README に警告を記載し、リポジトリに `.env` をコミットしないこと (.gitignore 確認)
 - **ステータス:** open (accepted risk for MVP)
 
+### [SEC-002] mimeType がクライアント allowlist のみで検証されている
+
+- **重要度:** LOW
+- **発生日:** 2026-05-04
+- **場所:** src/lib/geminiClient.ts:54-68 (`fileToBase64`)
+- **攻撃ベクター:** react-dropzone の `accept` はフロント側のみ検証。
+  DevTools から直接 `generatePaintImage` を呼べば任意の mimeType を送れる。
+- **影響:** Gemini API が予期しない形式の画像を受け取る。API エラーで終了するため
+  実害は限定的。API キー露出 (SEC-001) と組み合わせた場合のみ実効的な攻撃が成立。
+- **修正方法:**
+  - `fileToBase64` 内で抽出した mimeType を `ALLOWED_MIME_TYPES` に対して
+    allowlist チェックする。クライアントのみでも多層防御として有効。
+  - 本番公開時はサーバーサイドプロキシで再検証すること。
+- **ステータス:** open (low priority, accepted for MVP)
+
 ---
 
-## 監査チェックリスト (実装完了後に FEITAN が確認)
+## 監査チェックリスト — 2026-05-04 実施 ✅
 
-- [ ] `.env` が `.gitignore` に含まれているか
-- [ ] `.env.example` に API キーの実値が含まれていないか
-- [ ] 画像アップロードの MIME タイプ検証が実装されているか
-  (許可: image/jpeg, image/png, image/webp のみ)
-- [ ] 画像サイズ上限が設定されているか (推奨: 10MB 以下)
-- [ ] Gemini に送る prompt にユーザー入力が混入する場合、
-  injection 対策が取られているか
-- [ ] エラーレスポンスに内部情報 (APIキー, スタックトレース) が含まれていないか
+- [x] `.env` が `.gitignore` に含まれているか → **確認済み**
+- [x] `.env.example` に API キーの実値が含まれていないか → **プレースホルダーのみ**
+- [x] 画像アップロードの MIME タイプ検証が実装されているか → **react-dropzone accept で制限**
+- [x] 画像サイズ上限が設定されているか → **10MB (VITE_MAX_IMAGE_SIZE_BYTES)**
+- [x] Gemini に送る prompt にユーザー入力が混入する場合、injection 対策が取られているか
+  → **3-part 構造: systemPrompt / inline_data / userText で完全分離**
+- [x] エラーレスポンスに内部情報 (APIキー, スタックトレース) が含まれていないか
+  → **error.code + error.message のみ。スタックトレース非露出**
 
 ---
 

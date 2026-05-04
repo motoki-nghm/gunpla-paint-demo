@@ -76,8 +76,7 @@ function ImageCard({ label, src }: { label: string; src: string }) {
       <img
         src={src}
         alt={`${label} gunpla image`}
-        className="w-full rounded-lg border border-zinc-700 bg-zinc-800 object-contain"
-        style={{ maxHeight: '240px' }}
+        className="w-full max-h-60 rounded-lg border border-zinc-700 bg-zinc-800 object-contain"
       />
     </div>
   )
