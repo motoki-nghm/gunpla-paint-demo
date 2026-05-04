@@ -2,7 +2,6 @@ import { useCallback } from 'react'
 import { useDropzone, FileRejection } from 'react-dropzone'
 import { usePaintDemoStore } from '@/stores/paintDemoStore'
 
-
 const MAX_SIZE = Number(import.meta.env.VITE_MAX_IMAGE_SIZE_BYTES) || 10_485_760
 const ACCEPT = { 'image/jpeg': [], 'image/png': [], 'image/webp': [] }
 
@@ -13,7 +12,6 @@ export default function UploadPanel() {
   const setUploadedFile = usePaintDemoStore((s) => s.setUploadedFile)
   const setError = usePaintDemoStore((s) => s.setError)
 
-  // Show error near upload area only when no file is loaded (= upload-stage error)
   const uploadError = !uploadedFile ? error : null
 
   const onDrop = useCallback(
@@ -22,8 +20,8 @@ export default function UploadPanel() {
         const code = rejected[0].errors[0].code
         const msg =
           code === 'file-too-large'
-            ? `File exceeds the ${MAX_SIZE / 1_048_576} MB limit.`
-            : 'Unsupported format. Use JPEG, PNG, or WebP.'
+            ? `ファイルサイズが ${MAX_SIZE / 1_048_576}MB を超えています。`
+            : '非対応のファイル形式です。JPEG・PNG・WebP をご利用ください。'
         setError(msg)
         return
       }
@@ -44,34 +42,34 @@ export default function UploadPanel() {
 
   return (
     <div className="space-y-2">
-      <p className="text-xs font-mono text-zinc-400 uppercase tracking-widest">Input Image</p>
+      <p className="text-xs font-mono text-violet-400 uppercase tracking-widest">入力画像</p>
 
       <div
         {...getRootProps()}
         className={[
           'relative flex h-52 cursor-pointer flex-col items-center justify-center',
-          'rounded-lg border-2 border-dashed transition-colors duration-200',
+          'rounded-xl border-2 border-dashed transition-colors duration-200',
           isDragActive
-            ? 'border-amber-400 bg-amber-400/10'
-            : 'border-zinc-600 bg-zinc-800 hover:border-zinc-400 hover:bg-zinc-800/80',
+            ? 'border-violet-500 bg-violet-500/10'
+            : 'border-slate-700 bg-slate-900 hover:border-slate-500 hover:bg-slate-800/80',
         ].join(' ')}
       >
-        <input {...getInputProps()} aria-label="Upload gunpla image" />
+        <input {...getInputProps()} aria-label="ガンプラ画像をアップロード" />
 
         {uploadedImageUrl ? (
           <img
             src={uploadedImageUrl}
-            alt="Uploaded gunpla preview"
-            className="h-full w-full rounded-lg object-contain p-2"
+            alt="アップロードしたガンプラのプレビュー"
+            className="h-full w-full rounded-xl object-contain p-2"
           />
         ) : (
-          <div className="flex flex-col items-center gap-2 text-zinc-500 select-none">
+          <div className="flex flex-col items-center gap-2 text-slate-500 select-none">
             <UploadIcon className="h-8 w-8" />
             <p className="text-sm">
-              {isDragActive ? 'Drop it here…' : 'Drag & drop or click to select'}
+              {isDragActive ? 'ここにドロップ…' : 'ドラッグ＆ドロップ、またはクリックして選択'}
             </p>
-            <p className="text-xs text-zinc-600">
-              JPEG · PNG · WebP · max {MAX_SIZE / 1_048_576} MB
+            <p className="text-xs text-slate-600">
+              JPEG・PNG・WebP・最大 {MAX_SIZE / 1_048_576}MB
             </p>
           </div>
         )}
@@ -83,9 +81,9 @@ export default function UploadPanel() {
             e.stopPropagation()
             setUploadedFile(null)
           }}
-          className="text-xs text-zinc-500 underline-offset-2 hover:text-zinc-300 underline"
+          className="text-xs text-slate-500 underline underline-offset-2 hover:text-slate-300"
         >
-          Remove image
+          画像を削除
         </button>
       )}
 

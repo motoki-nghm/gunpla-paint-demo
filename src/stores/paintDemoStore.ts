@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { ApiMode, GenerationResult, PaintDemoState } from '@/types'
-import { generatePaintImage } from '@/lib/geminiClient'
+import { generatePaintImage } from '@/lib/leonardoClient'
 
 const defaultMode = (import.meta.env.VITE_DEFAULT_API_MODE as ApiMode) ?? ApiMode.FREE
 
@@ -20,7 +20,9 @@ export const usePaintDemoStore = create<PaintDemoState>((set, get) => ({
   setUploadedFile: (file) => {
     const { uploadedImageUrl, generationResult } = get()
     if (uploadedImageUrl) URL.revokeObjectURL(uploadedImageUrl)
-    if (generationResult?.outputImageUrl) URL.revokeObjectURL(generationResult.outputImageUrl)
+    if (generationResult?.outputImageUrl?.startsWith('blob:')) {
+      URL.revokeObjectURL(generationResult.outputImageUrl)
+    }
 
     if (!file) {
       set({ uploadedFile: null, uploadedImageUrl: null, generationResult: null, error: null })
@@ -38,16 +40,18 @@ export const usePaintDemoStore = create<PaintDemoState>((set, get) => ({
     const { uploadedFile, prompt, apiMode } = get()
 
     if (!uploadedFile) {
-      set({ error: 'Please upload an image first.' })
+      set({ error: '画像をアップロードしてください。' })
       return
     }
     if (!prompt.trim()) {
-      set({ error: 'Please enter a paint instruction.' })
+      set({ error: '塗装指示を入力してください。' })
       return
     }
 
     const prevResult = get().generationResult
-    if (prevResult?.outputImageUrl) URL.revokeObjectURL(prevResult.outputImageUrl)
+    if (prevResult?.outputImageUrl?.startsWith('blob:')) {
+      URL.revokeObjectURL(prevResult.outputImageUrl)
+    }
 
     set({ isGenerating: true, error: null, generationResult: null })
 
@@ -73,7 +77,9 @@ export const usePaintDemoStore = create<PaintDemoState>((set, get) => ({
   reset: () => {
     const { uploadedImageUrl, generationResult } = get()
     if (uploadedImageUrl) URL.revokeObjectURL(uploadedImageUrl)
-    if (generationResult?.outputImageUrl) URL.revokeObjectURL(generationResult.outputImageUrl)
+    if (generationResult?.outputImageUrl?.startsWith('blob:')) {
+      URL.revokeObjectURL(generationResult.outputImageUrl)
+    }
 
     set({
       uploadedFile: null,

@@ -3,8 +3,8 @@
 // ──────────────────────────────────────────────
 
 export enum ApiMode {
-  FREE = 'FREE',
-  PAID = 'PAID',
+  FREE = 'FREE',   // 標準モード
+  PAID = 'PAID',   // 高精度モード
 }
 
 // ──────────────────────────────────────────────
@@ -41,20 +41,4 @@ export interface PaintDemoState {
   setError: (error: string | null) => void
   generate: () => Promise<void>
   reset: () => void
-}
-
-// ──────────────────────────────────────────────
-//  Gemini API helpers
-// ──────────────────────────────────────────────
-
-export interface GeminiRequestPayload {
-  imageBase64: string
-  mimeType: string
-  prompt: string
-  apiKey: string
-}
-
-export interface GeminiResponse {
-  outputImageBase64: string
-  mimeType: string
 }

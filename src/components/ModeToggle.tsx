@@ -1,33 +1,33 @@
 import { ApiMode } from '@/types'
 import { usePaintDemoStore } from '@/stores/paintDemoStore'
 
+const LABELS: Record<ApiMode, string> = {
+  [ApiMode.FREE]: '標準',
+  [ApiMode.PAID]: '高精度',
+}
+
 export default function ModeToggle() {
   const apiMode = usePaintDemoStore((s) => s.apiMode)
   const setApiMode = usePaintDemoStore((s) => s.setApiMode)
 
-  const isFree = apiMode === ApiMode.FREE
+  const isStandard = apiMode === ApiMode.FREE
 
   return (
     <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
-      <span
-        className={[
-          'text-xs font-mono uppercase tracking-widest transition-colors',
-          isFree ? 'text-zinc-400' : 'text-amber-400',
-        ].join(' ')}
-      >
-        {isFree ? 'FREE' : 'PAID'}
+      <span className="text-xs font-mono text-slate-400 tracking-widest">
+        {LABELS[apiMode]}
       </span>
 
       <button
         role="switch"
-        aria-checked={!isFree}
-        aria-label={`API mode: ${apiMode}. Click to switch to ${isFree ? 'PAID' : 'FREE'}.`}
-        onClick={() => setApiMode(isFree ? ApiMode.PAID : ApiMode.FREE)}
+        aria-checked={!isStandard}
+        aria-label={`モード: ${LABELS[apiMode]}。クリックで${LABELS[isStandard ? ApiMode.PAID : ApiMode.FREE]}に切替`}
+        onClick={() => setApiMode(isStandard ? ApiMode.PAID : ApiMode.FREE)}
         className={[
           'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer items-center rounded-full',
-          'border-2 border-transparent transition-colors duration-200 focus:outline-none',
-          'focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900',
-          isFree ? 'bg-zinc-600' : 'bg-amber-400',
+          'border-2 border-transparent transition-colors duration-200',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950',
+          isStandard ? 'bg-slate-700' : 'bg-violet-600',
         ].join(' ')}
       >
         <span
@@ -35,7 +35,7 @@ export default function ModeToggle() {
           className={[
             'pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-md',
             'transform transition-transform duration-200',
-            isFree ? 'translate-x-0.5' : 'translate-x-[1.375rem]',
+            isStandard ? 'translate-x-0.5' : 'translate-x-[1.375rem]',
           ].join(' ')}
         />
       </button>
