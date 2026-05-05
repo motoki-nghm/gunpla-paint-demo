@@ -17,7 +17,7 @@
   .subtitle { font-size: 0.75rem; color: var(--text-faint); margin-bottom: 20px; }
   .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 16px; margin-bottom: 12px; }
   label { font-size: 0.75rem; color: var(--text-dim); display: block; margin-bottom: 6px; }
-  input[type=text], input[type=password], textarea { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: var(--text); font-size: 0.875rem; padding: 10px 12px; outline: none; -webkit-appearance: none; }
+  input[type=text], input[type=password], textarea, select { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: var(--text); font-size: 0.875rem; padding: 10px 12px; outline: none; -webkit-appearance: none; }
   input:focus, textarea:focus { border-color: var(--violet); }
   textarea { resize: vertical; min-height: 80px; }
   .drop-zone { border: 2px dashed rgba(139,92,246,0.4); border-radius: 14px; padding: 24px 16px; text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s; background: rgba(139,92,246,0.04); }
@@ -44,6 +44,7 @@
   .dl-btn { display: block; width: 100%; margin-top: 10px; padding: 12px; background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.3); border-radius: 10px; color: var(--violet-l); font-size: 0.875rem; text-align: center; text-decoration: none; }
   .status { margin-top: 10px; font-size: 0.8rem; color: var(--text-dim); min-height: 1.2em; text-align: center; }
   .status.error { color: #f87171; } .status.ok { color: #4ade80; }
+  .error-detail { margin-top: 8px; background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.2); border-radius: 8px; padding: 10px; font-size: 0.72rem; color: #fca5a5; font-family: monospace; word-break: break-all; white-space: pre-wrap; display: none; }
   .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.2); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px; }
   @keyframes spin { to { transform: rotate(360deg); } }
   .section-title { font-size: 0.8rem; font-weight: 600; color: var(--text-dim); margin-bottom: 10px; }
@@ -92,6 +93,7 @@
 
 <button class="primary" id="run-btn" disabled>塗装変更を実行</button>
 <div class="status" id="status"></div>
+<div class="error-detail" id="error-detail"></div>
 
 <div id="result-section" class="card" style="margin-top:12px;">
   <p class="section-title">生成結果</p>
@@ -101,7 +103,13 @@
 
 <script type="module">
 import { fal } from 'https://esm.sh/@fal-ai/client@1'
-const ENDPOINT = 'fal-ai/z-image-edit'
+
+// fal.ai エンドポイント候補リスト
+const ENDPOINTS = [
+  'fal-ai/z-image-edit',
+  'fal-ai/z-image/edit',
+  'fal-ai/z-image-turbo/image-to-image',
+]
 const PRESETS = [
   'Repaint in weathered battle-damaged dark metallic tones',
   'Apply glossy white and gold color scheme with panel highlights',
@@ -116,9 +124,10 @@ const dropZone = $('drop-zone'), fileInput = $('file-input')
 const previewWrap = $('preview-wrap'), previewImg = $('preview-img'), clearBtn = $('clear-btn')
 const promptEl = $('prompt'), chipsEl = $('chips')
 const strengthEl = $('strength'), strengthVal = $('strength-val')
-const runBtn = $('run-btn'), statusEl = $('status')
+const runBtn = $('run-btn'), statusEl = $('status'), errorDetail = $('error-detail')
 const resultSect = $('result-section'), resultImg = $('result-img'), dlBtn = $('dl-btn')
 let selectedFile = null
+
 const savedKey = localStorage.getItem(LS_KEY)
 if (savedKey) keyInput.value = savedKey
 keyInput.addEventListener('input', () => { localStorage.setItem(LS_KEY, keyInput.value); updateRunBtn() })
@@ -149,6 +158,18 @@ function setFile(file) {
   previewWrap.style.display = 'block'; dropZone.style.display = 'none'; updateRunBtn()
 }
 function updateRunBtn() { runBtn.disabled = !(selectedFile && keyInput.value.trim()) }
+
+function extractUrl(result) {
+  // 複数のレスポンス構造に対応
+  return result?.data?.images?.[0]?.url
+    ?? result?.images?.[0]?.url
+    ?? result?.data?.image?.url
+    ?? result?.image?.url
+    ?? result?.data?.output
+    ?? result?.output
+    ?? null
+}
+
 runBtn.addEventListener('click', async () => {
   const apiKey = keyInput.value.trim()
   const prompt = promptEl.value.trim()
@@ -156,22 +177,41 @@ runBtn.addEventListener('click', async () => {
   if (!apiKey) return setStatus('APIキーを入力してください', 'error')
   if (!selectedFile) return setStatus('画像を選択してください', 'error')
   if (!prompt) return setStatus('プロンプトを入力してください', 'error')
-  runBtn.disabled = true; resultSect.style.display = 'none'
+  runBtn.disabled = true
+  resultSect.style.display = 'none'
+  errorDetail.style.display = 'none'
   try {
     fal.config({ credentials: apiKey })
     setStatus('<span class="spinner"></span>画像をアップロード中…', '')
     const imageUrl = await fal.storage.upload(selectedFile)
     setStatus('<span class="spinner"></span>AI 生成中… (30秒ほどかかります)', '')
-    const result = await fal.subscribe(ENDPOINT, { input: { prompt, image_url: imageUrl, strength }, logs: false })
-    const outUrl = result?.data?.images?.[0]?.url ?? result?.images?.[0]?.url
-    if (!outUrl) throw new Error('画像URLが取得できませんでした')
-    resultImg.src = outUrl; dlBtn.href = outUrl
-    resultSect.style.display = 'block'
-    setStatus('✓ 生成完了', 'ok')
-    resultSect.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    let result, lastError
+    for (const endpoint of ENDPOINTS) {
+      try {
+        result = await fal.subscribe(endpoint, {
+          input: { prompt, image_url: imageUrl, strength },
+          logs: false,
+        })
+        const url = extractUrl(result)
+        if (url) {
+          resultImg.src = url; dlBtn.href = url
+          resultSect.style.display = 'block'
+          setStatus('✓ 生成完了', 'ok')
+          resultSect.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          return
+        }
+        lastError = '画像URLなし (' + endpoint + '): ' + JSON.stringify(result).slice(0, 200)
+      } catch (e) {
+        lastError = endpoint + ': ' + (e?.message ?? String(e))
+      }
+    }
+    throw new Error('すべてのエンドポイントで失敗\n' + lastError)
   } catch (err) {
     console.error(err)
-    setStatus('エラー: ' + (err?.message ?? err), 'error')
+    const msg = err?.message ?? String(err)
+    setStatus('失敗——下の詳細を確認してください', 'error')
+    errorDetail.textContent = msg
+    errorDetail.style.display = 'block'
   } finally {
     runBtn.disabled = false; updateRunBtn()
   }
