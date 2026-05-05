@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Z-Image Turbo — ガンプラ塗装</title>
+<title>FLUX — ガンプラ塗装</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -17,7 +17,7 @@
   .subtitle { font-size: 0.75rem; color: var(--text-faint); margin-bottom: 20px; }
   .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 16px; margin-bottom: 12px; }
   label { font-size: 0.75rem; color: var(--text-dim); display: block; margin-bottom: 6px; }
-  input[type=text], input[type=password], textarea, select { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: var(--text); font-size: 0.875rem; padding: 10px 12px; outline: none; -webkit-appearance: none; }
+  input[type=text], input[type=password], textarea { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: var(--text); font-size: 0.875rem; padding: 10px 12px; outline: none; -webkit-appearance: none; }
   input:focus, textarea:focus { border-color: var(--violet); }
   textarea { resize: vertical; min-height: 80px; }
   .drop-zone { border: 2px dashed rgba(139,92,246,0.4); border-radius: 14px; padding: 24px 16px; text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s; background: rgba(139,92,246,0.04); }
@@ -49,12 +49,13 @@
   @keyframes spin { to { transform: rotate(360deg); } }
   .section-title { font-size: 0.8rem; font-weight: 600; color: var(--text-dim); margin-bottom: 10px; }
   .key-toggle { font-size: 0.7rem; color: var(--violet-l); cursor: pointer; margin-left: 8px; }
+  .badge { display: inline-block; font-size: 0.65rem; font-weight: 700; padding: 2px 8px; border-radius: 99px; background: linear-gradient(135deg,#7c3aed,#a21caf); color: white; margin-left: 6px; vertical-align: middle; }
 </style>
 </head>
 <body>
 
-<h1>🎨 Z-Image Turbo</h1>
-<p class="subtitle">ガンプラ塗装 — powered by fal.ai</p>
+<h1>🎨 ガンプラ塗装</h1>
+<p class="subtitle">FLUX.1 img2img — powered by fal.ai</p>
 
 <div class="card">
   <label>fal.ai API キー <span class="key-toggle" id="key-toggle">表示</span></label>
@@ -78,12 +79,12 @@
 
 <div class="card">
   <label>変更プロンプト（英語推奨）</label>
-  <textarea id="prompt" placeholder="Repaint the Gunpla in a weathered dark metallic style with panel line details..."></textarea>
+  <textarea id="prompt" placeholder="A Gunpla model repainted in weathered dark metallic tones, panel lines highlighted, studio lighting..."></textarea>
   <div class="chips" id="chips"></div>
 </div>
 
 <div class="card">
-  <label>変更強度 (strength)</label>
+  <label>変更強度 (strength) — <span id="strength-label">バランス</span></label>
   <div class="slider-row">
     <input type="range" id="strength" min="0.1" max="1.0" step="0.05" value="0.75">
     <span class="range-val" id="strength-val">0.75</span>
@@ -104,18 +105,12 @@
 <script type="module">
 import { fal } from 'https://esm.sh/@fal-ai/client@1'
 
-// fal.ai エンドポイント候補リスト
-const ENDPOINTS = [
-  'fal-ai/z-image-edit',
-  'fal-ai/z-image/edit',
-  'fal-ai/z-image-turbo/image-to-image',
-]
 const PRESETS = [
-  'Repaint in weathered battle-damaged dark metallic tones',
-  'Apply glossy white and gold color scheme with panel highlights',
-  'Transform to deep midnight blue with silver accents',
-  'Custom red and black scheme with worn metallic finish',
-  'Desert camouflage: tan, brown and olive tones',
+  'A Gunpla repainted in weathered battle-damaged dark metallic tones, panel lines visible',
+  'A Gunpla with glossy white and gold color scheme, clean studio lighting',
+  'A Gunpla in deep midnight blue with silver panel line accents',
+  'A Gunpla custom painted red and black with worn metallic finish',
+  'A Gunpla in desert camouflage: tan, brown and olive drab tones',
 ]
 const LS_KEY = 'z-image-fal-key'
 const $ = id => document.getElementById(id)
@@ -123,7 +118,7 @@ const keyInput = $('fal-key'), keyToggle = $('key-toggle')
 const dropZone = $('drop-zone'), fileInput = $('file-input')
 const previewWrap = $('preview-wrap'), previewImg = $('preview-img'), clearBtn = $('clear-btn')
 const promptEl = $('prompt'), chipsEl = $('chips')
-const strengthEl = $('strength'), strengthVal = $('strength-val')
+const strengthEl = $('strength'), strengthVal = $('strength-val'), strengthLabel = $('strength-label')
 const runBtn = $('run-btn'), statusEl = $('status'), errorDetail = $('error-detail')
 const resultSect = $('result-section'), resultImg = $('result-img'), dlBtn = $('dl-btn')
 let selectedFile = null
@@ -138,11 +133,23 @@ keyToggle.addEventListener('click', () => {
 })
 PRESETS.forEach(text => {
   const chip = document.createElement('button')
-  chip.className = 'chip'; chip.textContent = text
+  chip.className = 'chip'
+  chip.textContent = text.slice(0, 30) + '…'
+  chip.title = text
   chip.addEventListener('click', () => { promptEl.value = text })
   chipsEl.appendChild(chip)
 })
-strengthEl.addEventListener('input', () => { strengthVal.textContent = (+strengthEl.value).toFixed(2) })
+function updateStrengthLabel(v) {
+  if (v < 0.4) return '元画像优先'
+  if (v < 0.65) return '軽微変更'
+  if (v < 0.85) return 'バランス'
+  return '大きく変更'
+}
+strengthEl.addEventListener('input', () => {
+  const v = +strengthEl.value
+  strengthVal.textContent = v.toFixed(2)
+  strengthLabel.textContent = updateStrengthLabel(v)
+})
 dropZone.addEventListener('click', () => fileInput.click())
 dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over') })
 dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'))
@@ -160,13 +167,10 @@ function setFile(file) {
 function updateRunBtn() { runBtn.disabled = !(selectedFile && keyInput.value.trim()) }
 
 function extractUrl(result) {
-  // 複数のレスポンス構造に対応
   return result?.data?.images?.[0]?.url
     ?? result?.images?.[0]?.url
     ?? result?.data?.image?.url
     ?? result?.image?.url
-    ?? result?.data?.output
-    ?? result?.output
     ?? null
 }
 
@@ -184,33 +188,27 @@ runBtn.addEventListener('click', async () => {
     fal.config({ credentials: apiKey })
     setStatus('<span class="spinner"></span>画像をアップロード中…', '')
     const imageUrl = await fal.storage.upload(selectedFile)
-    setStatus('<span class="spinner"></span>AI 生成中… (30秒ほどかかります)', '')
-    let result, lastError
-    for (const endpoint of ENDPOINTS) {
-      try {
-        result = await fal.subscribe(endpoint, {
-          input: { prompt, image_url: imageUrl, strength },
-          logs: false,
-        })
-        const url = extractUrl(result)
-        if (url) {
-          resultImg.src = url; dlBtn.href = url
-          resultSect.style.display = 'block'
-          setStatus('✓ 生成完了', 'ok')
-          resultSect.scrollIntoView({ behavior: 'smooth', block: 'start' })
-          return
-        }
-        lastError = '画像URLなし (' + endpoint + '): ' + JSON.stringify(result).slice(0, 200)
-      } catch (e) {
-        lastError = endpoint + ': ' + (e?.message ?? String(e))
-      }
-    }
-    throw new Error('すべてのエンドポイントで失敗\n' + lastError)
+    setStatus('<span class="spinner"></span>FLUX 生成中… (20〖30秒ほど)', '')
+    const result = await fal.subscribe('fal-ai/flux/dev/image-to-image', {
+      input: {
+        prompt,
+        image_url: imageUrl,
+        strength,
+        num_inference_steps: 28,
+      },
+      logs: false,
+    })
+    const outUrl = extractUrl(result)
+    if (!outUrl) throw new Error('画像URLなし\n' + JSON.stringify(result).slice(0, 300))
+    resultImg.src = outUrl
+    dlBtn.href = outUrl
+    resultSect.style.display = 'block'
+    setStatus('✓ 生成完了', 'ok')
+    resultSect.scrollIntoView({ behavior: 'smooth', block: 'start' })
   } catch (err) {
     console.error(err)
-    const msg = err?.message ?? String(err)
     setStatus('失敗——下の詳細を確認してください', 'error')
-    errorDetail.textContent = msg
+    errorDetail.textContent = err?.message ?? String(err)
     errorDetail.style.display = 'block'
   } finally {
     runBtn.disabled = false; updateRunBtn()
